@@ -246,6 +246,60 @@ STRIPE_SECRET_KEY=your_stripe_secret_key
   "message": "Payment successful"
 }
 ```
+---
+
+## Installation & Setup
+
+### 1. Clone the Repository
+```sh
+git clone https://github.com/IshantSomani/forever-backend.git
+cd forever-backend
+```
+
+### 2. Install Dependencies
+```sh
+npm install
+```
+
+### 3. Set Up Environment Variables
+Create a `.env` file in  `forever-backend/` directories with the following:
+```sh
+MONGODB_URI=your_mongodb_url
+CLOUDINARY_API_KEY="your_cloudinary_api_key"
+CLOUDINARY_SECRET_KEY="your_secret_key"
+CLOUDINARY_NAME="your_clouidinary_name"
+JWT_SECRET="your_jwt_secret"
+JWT_EXPIRES_IN="your_jwt_expires_in"
+ADMIN_EMAIL="your_admin_email"
+ADMIN_PASSWORD="your_password"
+STRIPE_SECRET_KEY=your_stripe_secret_key
+```
+
+### 4. Start the Applications
+```sh
+npm start
+```
+---
+
+## API Endpoints Overview
+
+### Authentication
+- **`POST /users/register`** - Register a new user.
+- **`POST /users/login`** - Login a user.
+
+### Products
+- **`GET /products/allProduct`** - Get all products.
+- **`GET /products/single/:id`** - Get a single product by ID.
+
+### Cart
+- **`POST /cart/addItem`** - Add an item to the cart.
+- **`DELETE /cart/removeItem`** - Remove an item from the cart.
+- **`GET /cart/getCart`** - Retrieve the user's cart.
+
+### Orders
+- **`POST /order/place`** - Place an order.
+- **`GET /order/userOrders`** - Retrieve user orders.
+- **`PUT /order/status`** - Update order status (Admin).
 
 ---
 
