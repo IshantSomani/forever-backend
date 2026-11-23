@@ -11,7 +11,33 @@ exports.addProduct = async (req, res, next) => {
         const image3 = req.files && req.files.image3 && req.files.image3[0];
         const image4 = req.files && req.files.image4 && req.files.image4[0];
         
-        const images = [image1, image2, image3, image4].filter(item => item !== undefined);
+        const images = [image1, image2, image3, image4].filter(Boolean);
+
+        if (images.length === 0) {
+            return res.status(400).json({ message: "Please upload at least one product image" });
+        }
+
+        // Validate required fields
+        if (!name || !description || price === undefined || !category || !subCategory) {
+            return res.status(400).json({ message: "All fields are required: Name, Description, Price, Category, Subcategory" });
+        }
+
+        const numPrice = Number(price);
+        if (isNaN(numPrice) || numPrice <= 0) {
+            return res.status(400).json({ message: "Please provide a valid positive price" });
+        }
+
+        // Parse and validate sizes
+        let parsedSizes = [];
+        try {
+            parsedSizes = typeof sizes === 'string' ? JSON.parse(sizes) : sizes;
+        } catch {
+            parsedSizes = Array.isArray(sizes) ? sizes : [sizes];
+        }
+
+        if (!Array.isArray(parsedSizes) || parsedSizes.length === 0) {
+            return res.status(400).json({ message: "Please select at least one size for the product" });
+        }
 
         const imagesUrl = await Promise.all(
             images.map(async (item) => {
@@ -26,20 +52,15 @@ exports.addProduct = async (req, res, next) => {
             })
         );
 
-        // Validate required fields
-        if (!name || !description || price === undefined || !category || !subCategory || !sizes) {
-            return res.status(400).json({ message: "All fields are required: Name, Description, Price, Category, Subcategory, Sizes" });
-        }
-
         const isBestSeller = bestSeller === true || bestSeller === 'true';
 
         const product = new productModel({
-            name,
-            description,
-            price: Number(price),
+            name: name.trim(),
+            description: description.trim(),
+            price: numPrice,
             category,
             subCategory,
-            sizes: typeof sizes === 'string' ? JSON.parse(sizes) : sizes,
+            sizes: parsedSizes,
             bestSeller: isBestSeller,
             images: imagesUrl,
             date: Date.now()
