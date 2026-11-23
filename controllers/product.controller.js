@@ -1,28 +1,37 @@
 const productModel = require('../models/product.model');
 const cloudinary = require('cloudinary').v2;
+const fs = require('fs');
 
 exports.addProduct = async (req, res, next) => {
     try {
         const { name, description, price, category, subCategory, sizes, bestSeller } = req.body;
 
-        const image1 = req.files.image1 && req.files.image1[0];
-        const image2 = req.files.image2 && req.files.image2[0];
-        const image3 = req.files.image3 && req.files.image3[0];
-        const image4 = req.files.image4 && req.files.image4[0];
+        const image1 = req.files && req.files.image1 && req.files.image1[0];
+        const image2 = req.files && req.files.image2 && req.files.image2[0];
+        const image3 = req.files && req.files.image3 && req.files.image3[0];
+        const image4 = req.files && req.files.image4 && req.files.image4[0];
         
         const images = [image1, image2, image3, image4].filter(item => item !== undefined);
 
         const imagesUrl = await Promise.all(
             images.map(async (item) => {
-                const url = await cloudinary.uploader.upload(item.path, { resource_type: 'image' },);
+                const url = await cloudinary.uploader.upload(item.path, { resource_type: 'image' });
+                // Clean up local temp file
+                if (item.path && fs.existsSync(item.path)) {
+                    fs.unlink(item.path, (err) => {
+                        if (err) console.error('Error deleting temp file:', err);
+                    });
+                }
                 return url.secure_url;
             })
         );
 
         // Validate required fields
-        if (!name || !description || !price || !category || !subCategory || !sizes || !bestSeller) {
-            return res.status(400).json({ message: "All fields are required: Name, Description, Price, Category, Subcategory, Sizes, bestSeller" });
+        if (!name || !description || price === undefined || !category || !subCategory || !sizes) {
+            return res.status(400).json({ message: "All fields are required: Name, Description, Price, Category, Subcategory, Sizes" });
         }
+
+        const isBestSeller = bestSeller === true || bestSeller === 'true';
 
         const product = new productModel({
             name,
@@ -30,8 +39,8 @@ exports.addProduct = async (req, res, next) => {
             price: Number(price),
             category,
             subCategory,
-            sizes: JSON.parse(sizes),
-            bestSeller: bestSeller === 'true' ? true : false,
+            sizes: typeof sizes === 'string' ? JSON.parse(sizes) : sizes,
+            bestSeller: isBestSeller,
             images: imagesUrl,
             date: Date.now()
         });

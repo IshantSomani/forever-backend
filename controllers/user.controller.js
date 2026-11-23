@@ -1,4 +1,5 @@
 const validator = require('validator');
+const jwt = require('jsonwebtoken');
 const userModel = require('../models/user.model');
 
 exports.registerUser = async (req, res, next) => {
@@ -52,6 +53,21 @@ exports.loginUser = async (req, res, next) => {
             return res.status(400).json({ message: "Email and password are required" });
         }
 
+        // Support master admin credentials from environment if configured
+        if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD &&
+            email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
+            const token = jwt.sign(
+                { _id: 'master_admin', email, role: 'admin' },
+                process.env.JWT_SECRET,
+                { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
+            );
+            return res.status(200).json({
+                message: 'Admin login successful!',
+                token,
+                data: { name: 'Admin', email, role: 'admin' }
+            });
+        }
+
         const user = await userModel.findOne({ email }).select('+password');
 
         if (!user) {
@@ -88,12 +104,7 @@ exports.loginUser = async (req, res, next) => {
 
 exports.registerAdmin = async (req, res) => {
     try {
-        // Authorization check
-        // if (req.data.role !== 'admin') {
-        //     return res.status(403).json({ message: "Unauthorized: Admin privileges required" });
-        // }
-
-        const { name, email, password, role = 'moderator' } = req.body;
+        const { name, email, password, role = 'admin' } = req.body;
 
         // Validate input
         const requiredFields = { name, email, password };
@@ -117,23 +128,26 @@ exports.registerAdmin = async (req, res) => {
             return res.status(409).json({ message: "Email already registered" });
         }
 
+        const hashPassword = await userModel.hashPassword(password);
+
         // Create new admin/moderator
         const user = new userModel({
             name,
             email,
-            password,
+            password: hashPassword,
             role,
-            // emailVerified: true
         });
 
         await user.save();
 
         // Generate token
         const token = user.generateAuthToken();
+        const userWithoutPassword = user.toObject();
+        delete userWithoutPassword.password;
 
         return res.status(201).json({
             message: `${role.charAt(0).toUpperCase() + role.slice(1)} registered successfully!`,
-            data: userModel.updateSearchIndex,
+            data: userWithoutPassword,
             token
         });
 

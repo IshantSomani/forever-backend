@@ -121,9 +121,12 @@ exports.verifyStripe = async (req, res) => {
     const { orderId, success, userId } = req.body;
 
     try {
-        if (success === 'true') {
+        if (success === 'true' || success === true) {
             await orderModel.findByIdAndUpdate(orderId, { payment: true });
-            await orderModel.findByIdAndUpdate(userId, { cartData: {} });
+            const targetUserId = userId || req.userId;
+            if (targetUserId) {
+                await userModel.findByIdAndUpdate(targetUserId, { cartData: {} });
+            }
             return res.status(200).json({ message: "Payment successful. Order marked as paid.", success: true });
         } else {
             await orderModel.findByIdAndDelete(orderId);
@@ -153,14 +156,13 @@ exports.allOrders = async (req, res, next) => {
 // User Frontend
 exports.userOrders = async (req, res, next) => {
     try {
-        const { userId } = req.body;
-        const userOrders = await orderModel.find({ userId });
-
-        if (!userOrders || userOrders.length === 0) {
-            return res.status(404).json({ message: "No orders found for the provided user." });
+        const userId = req.userId || req.body?.userId;
+        if (!userId) {
+            return res.status(400).json({ message: "User ID is required" });
         }
+        const userOrders = await orderModel.find({ userId }).sort({ date: -1 });
 
-        return res.status(200).json({ message: "User orders retrieved successfully.", data: userOrders });
+        return res.status(200).json({ message: "User orders retrieved successfully.", data: userOrders || [] });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "An error occurred while fetching the user orders.", error: error.message });
