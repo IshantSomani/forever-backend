@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const jwt = require("jsonwebtoken");
+const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const validator = require('validator');
 
@@ -60,7 +61,10 @@ const userSchema = new mongoose.Schema({
     cartData: {
         type: Object,
         default: {}
-    }
+    },
+    passwordChangedAt: Date,
+    passwordResetToken: String,
+    passwordResetExpires: Date
 }, {
     timestamps: true,
     toObject: { virtuals: true },
@@ -101,9 +105,8 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
 };
 
 // Query middleware to exclude inactive users
-userSchema.pre(/^find/, function (next) {
+userSchema.pre(/^find/, function () {
     this.find({ active: { $ne: false } });
-    next();
 });
 
 userSchema.methods.createPasswordResetToken = function () {

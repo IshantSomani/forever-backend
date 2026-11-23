@@ -17,8 +17,17 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// config
-connectDb();
+// Ensure Database is connected before handling API requests
+app.use(async (req, res, next) => {
+    try {
+        await connectDb();
+        next();
+    } catch (err) {
+        console.error("Database connection failure:", err);
+        return res.status(500).json({ message: "Database connection failed", error: err.message });
+    }
+});
+
 connectCloudinary();
 
 app.use('/api/users', userRoutes);

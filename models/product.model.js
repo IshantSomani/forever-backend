@@ -69,10 +69,9 @@ productSchema.virtual('formattedPrice').get(function () {
     return `₹${this.price.toFixed(2)}`;
 });
 
-// Corrected query middleware to use status field
-productSchema.pre(/^find/, function (next) {
+// Query middleware to filter active products
+productSchema.pre(/^find/, function () {
     this.find({ status: { $ne: false } });
-    next();
 });
 
 const productModel = mongoose.model('Product', productSchema);

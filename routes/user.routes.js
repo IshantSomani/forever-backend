@@ -9,9 +9,7 @@ router.post('/signup', registerUser);
 router.post('/login', loginUser);
 
 // Admin routes
-router.post('/register/admin',
-    // authMiddleware,
-    registerAdmin
-);
+// Only an existing admin (or the master admin from .env) may create admins
+router.post('/register/admin', authMiddleware, registerAdmin);
 
 module.exports = router;

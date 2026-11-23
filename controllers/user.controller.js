@@ -38,7 +38,9 @@ exports.registerUser = async (req, res, next) => {
         const userWithoutPassword = user.toObject();
         delete userWithoutPassword.password;
 
-        return res.status(200).json({ message: 'User register successfully!', data: userWithoutPassword });
+        const token = user.generateAuthToken();
+
+        return res.status(200).json({ message: 'User register successfully!', token, data: userWithoutPassword });
     } catch (error) {
         console.error('Registration Error:', error);
         return res.status(500).json({ message: 'Server error during registration', error: error.message });
